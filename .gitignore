@@ -150,3 +150,7 @@ media/
 
 sent_emails/
 
+db.json
+
+# Статика 
+blogicum/static_dev/
