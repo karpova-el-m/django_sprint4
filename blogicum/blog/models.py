@@ -74,6 +74,7 @@ class Post(BaseModel):
     )
     author = models.ForeignKey(
         User,
+        related_name='posts',
         on_delete=models.CASCADE,
         verbose_name='Автор публикации'
     )
@@ -91,6 +92,11 @@ class Post(BaseModel):
         null=True,
         verbose_name='Категория',
     )
+    image = models.ImageField(
+        'Фото',
+        blank=True,
+        upload_to='post_images'
+    )
 
     published_posts = PostsManager()
     objects = models.Manager()
@@ -99,6 +105,12 @@ class Post(BaseModel):
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
         ordering = ['-pub_date']
+        constraints = (
+            models.UniqueConstraint(
+                fields=('title', 'text', 'author',),
+                name='Unique post constraint',
+            ),
+        )
 
     def __str__(self):
         return self.title[:MAX_NAME_LENGTH]

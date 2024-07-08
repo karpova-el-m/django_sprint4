@@ -154,3 +154,6 @@ db.json
 
 # Статика 
 blogicum/static_dev/
+
+# Filebased email backend
+/sent_emails

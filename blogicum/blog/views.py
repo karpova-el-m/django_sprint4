@@ -1,40 +1,59 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.urls import reverse_lazy
+from django.core.paginator import Paginator
 
-from .models import Category, Post
-from blogicum.constants import POSTS_NUMBER
-
-
-def index(request):
-    Posts = Post.published_posts.get_queryset()
-    return render(
-        request,
-        'blog/index.html',
-        {'post_list': Posts[:POSTS_NUMBER]}
-    )
+from .models import Category, Post, User
+from .forms import PostForm
 
 
-def post_detail(request, post_рк):
-    Posts = Post.published_posts.get_queryset()
-    post_detail = get_object_or_404(
-        Posts,
-        pk=post_рк
-    )
-    return render(
-        request,
-        'blog/detail.html',
-        {'post': post_detail}
-    )
+class PostMixin:
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+    success_url = reverse_lazy('blog:index')
 
 
-def category_posts(request, category_slug):
-    category = get_object_or_404(
-        Category,
-        slug=category_slug,
-        is_published=True
-    )
-    post_list = category.posts.all()
-    return render(
-        request,
-        'blog/category.html',
-        {'post_list': post_list, 'category': category}
-    )
+class PostDetailView(DetailView):
+    model = Post
+    pk_url_kwarg = 'post_pk'
+    template_name = 'blog/detail.html'
+
+
+class PostCreateView(PostMixin, CreateView):
+    pass
+
+
+class PostEditView(PostMixin, UpdateView):
+    pk_url_kwarg = 'post_id'
+
+
+class PostDeleteView(DeleteView):
+    model = Post
+    template_name = 'blog/create.html'
+    pk_url_kwarg = 'post_id'
+    success_url = reverse_lazy('blog:index')
+
+
+class PostListView(ListView):
+    model = Post
+    paginate_by = 10
+    template_name = 'blog/index.html'
+
+
+class UserDetailView(DetailView):
+    model = User
+    template_name = 'blog/profile.html'
+    slug_field = 'username'
+    context_object_name = 'profile'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['posts'] = (
+            self.object.posts.select_related('author')
+        )
+        paginator = Paginator(context['posts'], 10)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        context = {'page_obj': page_obj}
+        return context
+    
