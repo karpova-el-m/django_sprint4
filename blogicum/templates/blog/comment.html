@@ -3,8 +3,10 @@
 {% block title %}
   {% if '/edit_comment/' in request.path %}
     Редактирование комментария
-  {% else %}
+  {% elif '/delete_comment/' in request.path %}
     Удаление комментария
+  {% else %}
+    Новый комментарий
   {% endif %}
 {% endblock %}
 {% block content %}
@@ -14,8 +16,10 @@
         <div class="card-header">
           {% if '/edit_comment/' in request.path %}
             Редактирование комментария
-          {% else %}
+          {% elif '/delete_comment/' in request.path %}
             Удаление комментария
+          {% else %}
+            Новый комментарий
           {% endif %}
         </div>
         <div class="card-body">
@@ -29,7 +33,11 @@
             {% else %}
               <p>{{ comment.text }}</p>
             {% endif %}
-            {% bootstrap_button button_type="submit" content="Отправить" %}
+            {% if '/delete_comment/' in request.path %}
+              {% bootstrap_button button_type="submit" content="Удалить" %}
+            {% else %}
+              {% bootstrap_button button_type="submit" content="Отправить" %}
+            {% endif %}
           </form>
         </div>
       </div>

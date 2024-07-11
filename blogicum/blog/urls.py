@@ -46,8 +46,20 @@ urlpatterns = [
         name='profile'
     ),
     path(
-        'posts/<post_id>/comment/',
-        views.add_comment,
+        'posts/<int:post_id>/comment/',
+        views.CommentCreateView.as_view(),
         name='add_comment'
     ),
+    path(
+        'posts/<int:pk>/edit_comment/<int:comment_id>/',
+        views.CommentEditView.as_view(),
+        name='edit_comment'
+    ),
+    path(
+        'posts/<int:pk>/delete_comment/<int:comment_id>/',
+        views.CommentDeleteView.as_view(),
+        name='delete_comment'
+    ),
+    
+
 ]
