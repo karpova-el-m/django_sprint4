@@ -14,6 +14,7 @@ class PostsManager(models.Manager):
             pub_date__lte=timezone.now(),
             is_published=True,
             category__is_published=True,
+            location__is_published=True,
         )
 
 

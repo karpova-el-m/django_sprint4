@@ -109,11 +109,15 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
         return reverse('blog:profile', kwargs={'username': self.object})
 
 
-class CommentMixin():
+class CommentMixin:
     model = Comment
     template_name = 'blog/comment.html'
     pk_url_kwarg = 'comment_id'
-    # Если в ссылке несуществующий номер поста - нет ошибки 404
+    
+    def get_queryset(self):
+        post = get_object_or_404(Post, id=self.kwargs['pk'], is_published=True)
+        return Comment.objects.filter(post_id=post.id)
+
     def get_success_url(self, **kwargs):
         return reverse('blog:post_detail', kwargs={'post_pk': self.kwargs['pk']})
 
@@ -138,4 +142,8 @@ class CommentEditView(LoginRequiredMixin, CommentMixin, AuthorPermissionMixin, U
 
 
 class CommentDeleteView(LoginRequiredMixin, CommentMixin, AuthorPermissionMixin, DeleteView):
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     print(context)
     pass
