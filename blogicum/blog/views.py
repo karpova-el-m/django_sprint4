@@ -1,8 +1,9 @@
 from django.shortcuts import get_object_or_404
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse_lazy
 from django.db.models import Count
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
 
 from .models import Category, Post, User, Comment
 from .forms import CommentForm, PostForm, UserForm
@@ -28,13 +29,22 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_pk'
     template_name = 'blog/detail.html'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = CommentForm()
-        context['comments'] = (
-            self.object.comment.select_related('author')
+    def get_object(self):
+        post = super().get_object()
+        if post.author == self.request.user:
+            return post
+        return get_object_or_404(
+            Post.published_posts, id=post.id
         )
-        return context
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(
+            **kwargs,
+            form=CommentForm(),
+            comments = (
+                self.object.comment.select_related('author')
+            )
+        )
 
 
 class PostCreateView(LoginRequiredMixin, PostMixin, CreateView):
@@ -47,7 +57,7 @@ class PostCreateView(LoginRequiredMixin, PostMixin, CreateView):
     
     def get_success_url(self):
         username = User.objects.get(username=self.request.user)
-        return reverse('blog:profile', kwargs={'username': username})
+        return reverse_lazy('blog:profile', kwargs={'username': username})
 
 
 class PostEditView(LoginRequiredMixin, PostMixin, AuthorPermissionMixin, UpdateView):
@@ -106,7 +116,7 @@ class ProfileEditView(LoginRequiredMixin, UpdateView):
         return self.request.user
     
     def get_success_url(self, **kwargs):
-        return reverse('blog:profile', kwargs={'username': self.object})
+        return reverse_lazy('blog:profile', kwargs={'username': self.object})
 
 
 class CommentMixin:
@@ -119,7 +129,7 @@ class CommentMixin:
         return Comment.objects.filter(post_id=post.id)
 
     def get_success_url(self, **kwargs):
-        return reverse('blog:post_detail', kwargs={'post_pk': self.kwargs['pk']})
+        return reverse_lazy('blog:post_detail', kwargs={'post_pk': self.kwargs['pk']})
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
@@ -133,7 +143,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self, **kwargs):
-        return reverse('blog:post_detail', kwargs={'post_pk': self.kwargs['post_id']})
+        return reverse_lazy('blog:post_detail', kwargs={'post_pk': self.kwargs['post_id']})
 
 
 class CommentEditView(LoginRequiredMixin, CommentMixin, AuthorPermissionMixin, UpdateView):
@@ -142,8 +152,4 @@ class CommentEditView(LoginRequiredMixin, CommentMixin, AuthorPermissionMixin, U
 
 
 class CommentDeleteView(LoginRequiredMixin, CommentMixin, AuthorPermissionMixin, DeleteView):
-
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     print(context)
     pass
