@@ -9,7 +9,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    ]
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -18,7 +18,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'debug_toolbar',
     'django_bootstrap5',
 
     'blog.apps.BlogConfig',
@@ -34,7 +33,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'blogicum.urls'
@@ -101,10 +99,6 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# INTERNAL_IPS = [
-#     '127.0.0.1',
-# ]
-
 CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
@@ -113,7 +107,7 @@ EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
 
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# MEDIA_URL = 'media/'
+MEDIA_URL = 'media/'
 
 LOGIN_REDIRECT_URL = 'blog:index'
 

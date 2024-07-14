@@ -11,7 +11,7 @@ handler500 = 'pages.views.custom_500'
 urlpatterns = [
     path(
         'pages/',
-        include('pages.urls',namespace='pages')
+        include('pages.urls', namespace='pages')
     ),
     path(
         'admin/',
@@ -26,7 +26,7 @@ urlpatterns = [
         include('django.contrib.auth.urls')
     ),
     path(
-        'auth/registration/', 
+        'auth/registration/',
         CreateView.as_view(
             template_name='registration/registration_form.html',
             form_class=UserCreationForm,
@@ -34,4 +34,4 @@ urlpatterns = [
         ),
         name='registration',
     ),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
