@@ -1,26 +1,19 @@
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
-                                  UpdateView)
+from django.utils import timezone
+from django.views.generic import (
+    CreateView, DeleteView, DetailView, ListView, UpdateView
+)
 
-from .forms import CommentForm, PostForm, UserForm
-from .models import Category, Comment, Post, User
+from blogicum.constants import POSTS_PER_PAGE
+from .forms import CommentForm, UserForm
+from .models import Category, Comment, Post
+from .mixins import PostMixin, AuthorPermissionMixin, CommentMixin
 
-
-class PostMixin:
-    model = Post
-    form_class = PostForm
-    template_name = "blog/create.html"
-
-
-class AuthorPermissionMixin(UserPassesTestMixin):
-
-    def test_func(self):
-        return self.get_object().author == self.request.user
-
-    def handle_no_permission(self):
-        return redirect("blog:post_detail", post_pk=self.get_object().id)
+User = get_user_model()
 
 
 class PostDetailView(DetailView):
@@ -29,13 +22,25 @@ class PostDetailView(DetailView):
     template_name = "blog/detail.html"
 
     def get_object(self):
-        post = get_object_or_404(
-            Post.objects,
-            pk=self.kwargs[self.pk_url_kwarg]
-        )
-        if post.author == self.request.user:
-            return post
-        return get_object_or_404(Post.published_posts, id=post.id)
+        if self.request.user.is_anonymous:
+            post = get_object_or_404(
+                Post.published_posts, Q(pk=self.kwargs[self.pk_url_kwarg])
+            )
+        else:
+            post = get_object_or_404(
+                Post.objects, (
+                    (
+                        Q(author=self.request.user)
+                        | (
+                            Q(is_published=True)
+                            & Q(category__is_published=True)
+                            & Q(pub_date__lte=timezone.now())
+                        )
+                    )
+                    & Q(pk=self.kwargs[self.pk_url_kwarg])
+                ),
+            )
+        return post
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(
@@ -81,11 +86,11 @@ class PostDeleteView(
 class PostListView(ListView):
     template_name = "blog/index.html"
     queryset = Post.published_posts_comments.all()
-    paginate_by = 10
+    paginate_by = POSTS_PER_PAGE
 
 
 class CategoryListView(ListView):
-    paginate_by = 10
+    paginate_by = POSTS_PER_PAGE
     template_name = "blog/category.html"
     context_object_name = "category"
 
@@ -97,23 +102,29 @@ class CategoryListView(ListView):
 
 
 class ProfileListView(ListView):
-    paginate_by = 10
+    paginate_by = POSTS_PER_PAGE
     template_name = "blog/profile.html"
 
     def get_queryset(self):
         author = get_object_or_404(User, username=self.kwargs["username"])
-        if author != self.request.user:
-            return (
-                Post.published_posts_comments.filter(author=author)
+        if self.request.user.is_anonymous:
+            post = Post.published_posts_comments.filter(author=author)
+        else:
+            post = Post.post_comments.filter(
+                Q(author=self.request.user)
+                | (
+                    Q(author=author)
+                    & Q(is_published=True)
+                    & Q(category__is_published=True)
+                    & Q(pub_date__lte=timezone.now())
+                )
             )
-        return (
-            Post.post_comments.filter(author=author)
-        )
+        return post
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(
             **kwargs,
-            profile=(get_object_or_404(User, username=self.kwargs["username"]))
+            profile=get_object_or_404(User, username=self.kwargs["username"])
         )
 
 
@@ -132,22 +143,6 @@ class ProfileEditView(
         return reverse_lazy(
             "blog:profile",
             kwargs={"username": self.object}
-        )
-
-
-class CommentMixin:
-    model = Comment
-    template_name = "blog/comment.html"
-    pk_url_kwarg = "comment_id"
-
-    def get_queryset(self):
-        post = get_object_or_404(Post, id=self.kwargs["pk"], is_published=True)
-        return Comment.objects.filter(post_id=post.id)
-
-    def get_success_url(self, **kwargs):
-        return reverse_lazy(
-            "blog:post_detail",
-            kwargs={"post_pk": self.kwargs["pk"]}
         )
 
 
@@ -173,7 +168,6 @@ class CommentEditView(
     LoginRequiredMixin, CommentMixin, AuthorPermissionMixin, UpdateView
 ):
     form_class = CommentForm
-    pass
 
 
 class CommentDeleteView(

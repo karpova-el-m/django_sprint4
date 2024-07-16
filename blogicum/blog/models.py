@@ -1,53 +1,13 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Count
-from django.utils import timezone
 
 from core.models import BaseModel
-from blogicum.constants import MAX_LENGTH, MAX_NAME_LENGTH
-
+from blogicum.constants import MAX_LENGTH, MAX_TITLE_LENGTH
+from .managers import (
+    PostsManager, CommentManager, PublishedPostsCommentManager
+)
 
 User = get_user_model()
-
-
-class PostsManager(models.Manager):
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .filter(
-                pub_date__lte=timezone.now(),
-                is_published=True,
-                category__is_published=True,
-                location__is_published=True,
-            )
-        )
-
-
-class CommentManager(models.Manager):
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .annotate(comment_count=Count("comment"))
-            .order_by("-pub_date")
-        )
-
-
-class PublishedPostsCommentManager(models.Manager):
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .filter(
-                pub_date__lte=timezone.now(),
-                is_published=True,
-                category__is_published=True,
-                location__is_published=True,
-            )
-            .annotate(comment_count=Count("comment"))
-            .order_by("-pub_date")
-        )
 
 
 class Location(BaseModel):
@@ -61,7 +21,7 @@ class Location(BaseModel):
         verbose_name_plural = "Местоположения"
 
     def __str__(self):
-        return self.name[:MAX_NAME_LENGTH]
+        return self.name[:MAX_TITLE_LENGTH]
 
 
 class Category(BaseModel):
@@ -81,7 +41,7 @@ class Category(BaseModel):
         verbose_name_plural = "Категории"
 
     def __str__(self):
-        return self.title[:MAX_NAME_LENGTH]
+        return self.title[:MAX_TITLE_LENGTH]
 
 
 class Post(BaseModel):
@@ -126,7 +86,7 @@ class Post(BaseModel):
     class Meta:
         verbose_name = "публикация"
         verbose_name_plural = "Публикации"
-        ordering = ["-pub_date"]
+        ordering = ("-pub_date",)
         constraints = (
             models.UniqueConstraint(
                 fields=(
@@ -139,7 +99,7 @@ class Post(BaseModel):
         )
 
     def __str__(self):
-        return self.title[:MAX_NAME_LENGTH]
+        return self.title[:MAX_TITLE_LENGTH]
 
 
 class Comment(models.Model):
@@ -153,6 +113,9 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
-        ordering = [
-            "created_at",
-        ]
+        verbose_name = "комментарий"
+        verbose_name_plural = "Комментарии"
+        ordering = ("created_at",)
+
+    def __str__(self):
+        return self.text[:MAX_TITLE_LENGTH]
